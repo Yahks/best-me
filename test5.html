@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Login Demo</title>
+</head>
+<body>
+  <h1>Facebook Login Demo</h1>
+  <fb:login-button 
+    scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,publish_pages" 
+    onlogin="checkLoginState();">
+  </fb:login-button>
+  <div id="status"></div>
+
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : 'your-app-id', // Replace with your app ID
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v11.0'
+      });
+        
+      FB.AppEvents.logPageView();   
+    };
+
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+
+    function checkLoginState() {
+      FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+      });
+    }
+
+    function statusChangeCallback(response) {
+      console.log(response);
+      if (response.status === 'connected') {
+        document.getElementById('status').innerHTML = 'Logged in!';
+        var accessToken = response.authResponse.accessToken;
+        // Call a function to get the page access token and post a message
+        getPageAccessToken(accessToken);
+      } else {
+        document.getElementById('status').innerHTML = 'Please log into this app.';
+      }
+    }
+
+    function getPageAccessToken(userAccessToken) {
+      FB.api('/me/accounts', { access_token: userAccessToken }, function(response) {
+        console.log(response);
+        if (response.data && response.data.length > 0) {
+          var pageAccessToken = response.data[0].access_token;
+          postMessage(pageAccessToken);
+        } else {
+          document.getElementById('status').innerHTML = 'No pages found.';
+        }
+      });
+    }
+
+    function postMessage(pageAccessToken) {
+      var message = "Hello, this is an automated post!";
+      FB.api(
+        '/your-page-id/feed', // Replace with your page ID
+        'POST',
+        { message: message, access_token: pageAccessToken },
+        function(response) {
+          if (response && !response.error) {
+            document.getElementById('status').innerHTML = 'Post was successful!';
+          } else {
+            document.getElementById('status').innerHTML = 'Failed to post: ' + response.error.message;
+          }
+        }
+      );
+    }
+  </script>
+</body>
+</html>
